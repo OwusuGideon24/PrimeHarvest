@@ -3,42 +3,49 @@ import { useNavigate } from "react-router-dom";
 function QuickActions() {
   const navigate = useNavigate();
 
+  const actions = [
+    {
+      label: "Deposit",
+      icon: "💰",
+      path: "/deposit",
+    },
+    {
+      label: "Withdraw",
+      icon: "💸",
+      path: "/withdraw",
+    },
+    {
+      label: "Transactions",
+      icon: "📜",
+      path: "/transactions",
+    },
+    {
+      label: "Invite Friends",
+      icon: "👥",
+      path: "/referrals",
+    },
+  ];
+
   return (
-    <div className="bg-white rounded-3xl shadow-sm p-6 mb-8">
-      <h2 className="text-2xl font-bold mb-6">
+    <section className="rounded-2xl bg-white p-5 shadow-sm sm:rounded-3xl sm:p-6">
+      <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
         Quick Actions
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <button
-          onClick={() => navigate("/deposit")}
-          className="bg-green-600 hover:bg-green-700 text-white py-4 rounded-xl font-semibold"
-        >
-          💰 Deposit
-        </button>
-
-        <button
-          onClick={() => navigate("/withdraw")}
-          className="bg-red-600 hover:bg-red-700 text-white py-4 rounded-xl font-semibold"
-        >
-          💸 Withdraw
-        </button>
-
-        <button
-          onClick={() => navigate("/transactions")}
-          className="bg-slate-900 hover:bg-slate-800 text-white py-4 rounded-xl font-semibold"
-        >
-          📜 Transactions
-        </button>
-
-        <button
-          onClick={() => navigate("/referrals")}
-          className="bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-xl font-semibold"
-        >
-          👥 Invite Friends
-        </button>
+      <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {actions.map((action) => (
+          <button
+            key={action.path}
+            type="button"
+            onClick={() => navigate(action.path)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-slate-900 via-emerald-900 to-emerald-700 px-5 py-4 font-semibold text-white transition duration-300 hover:-translate-y-0.5 hover:shadow-lg"
+          >
+            <span>{action.icon}</span>
+            <span>{action.label}</span>
+          </button>
+        ))}
       </div>
-    </div>
+    </section>
   );
 }
 

@@ -1,65 +1,99 @@
-/* eslint-disable react-hooks/set-state-in-effect */
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useCallback, useEffect, useState } from "react";
+import api from "../services/api";
+
 import DashboardHeader from "../components/dashboard/DashboardHeader";
 import StatsCards from "../components/dashboard/StatsCards";
 import QuickActions from "../components/dashboard/QuickActions";
 
 function Dashboard() {
   const [user, setUser] = useState(null);
-const [investments, setInvestments] = useState([]);
-const [plans, setPlans] = useState([]);
+  const [investments, setInvestments] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [investingPlanId, setInvestingPlanId] = useState(null);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Fetch logged in user
- const fetchUser = async () => {
-  try {
-    const token = localStorage.getItem("token");
+  const token = localStorage.getItem("token");
 
-   const [userResponse, investmentResponse, plansResponse] =
-  await Promise.all([
-    axios.get("http://localhost:5000/api/auth/me", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }),
+  const fetchDashboardData = useCallback(async () => {
+    if (!token) {
+      setLoading(false);
+      setErrorMessage("Your login session is unavailable.");
+      return;
+    }
 
-    axios.get("http://localhost:5000/api/wallet/investments", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }),
+    try {
+      setErrorMessage("");
 
-    axios.get("http://localhost:5000/api/profit/plans"),
-  ]);
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
 
-    setUser(userResponse.data);
-    setInvestments(investmentResponse.data);
-    setPlans(plansResponse.data);
+      const [userResponse, investmentResponse, plansResponse] =
+        await Promise.all([
+          api.get("/auth/me", config),
+          api.get("/wallet/investments", config),
+          api.get("/profit/plans"),
+        ]);
 
-  } catch (error) {
-    console.error(error);
-  }
-};
+      setUser(userResponse.data.user || userResponse.data);
+
+      setInvestments(
+        Array.isArray(investmentResponse.data)
+          ? investmentResponse.data
+          : investmentResponse.data.investments || []
+      );
+
+      setPlans(
+        Array.isArray(plansResponse.data)
+          ? plansResponse.data
+          : plansResponse.data.plans || []
+      );
+    } catch (error) {
+      console.error("Unable to load dashboard:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
+      setErrorMessage(
+        error.response?.data?.message ||
+          error.message ||
+          "Unable to load dashboard data."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
-    fetchUser();
-  }, []);
+    const timeoutId = window.setTimeout(() => {
+      void fetchDashboardData();
+    }, 0);
 
-  // Investment plans
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [fetchDashboardData]);
 
-  // Purchase investment
   const invest = async (plan) => {
-    try {
-      const token = localStorage.getItem("token");
+    if (!token || investingPlanId) {
+      return;
+    }
 
-      const response = await axios.post(
-        "http://localhost:5000/api/wallet/invest",
+    try {
+      setInvestingPlanId(plan.id);
+
+      const response = await api.post(
+        "/wallet/invest",
         {
           plan_name: plan.name,
-          amount: plan.investment_amount,
-          daily_return: plan.daily_return,
-          duration_days: plan.duration_days,
-          total_return: plan.total_return,
+          amount: Number(plan.investment_amount),
+          daily_return: Number(plan.daily_return),
+          duration_days: Number(plan.duration_days),
+          total_return: Number(plan.total_return),
         },
         {
           headers: {
@@ -68,194 +102,268 @@ const [plans, setPlans] = useState([]);
         }
       );
 
-      alert(response.data.message);
+      alert(response.data.message || "Investment successful.");
 
-      // Refresh balance immediately
-      await fetchUser();
-
+      await fetchDashboardData();
     } catch (error) {
+      console.error("Investment failed:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+
       alert(
         error.response?.data?.message ||
-        "Investment failed"
+          error.message ||
+          "Investment failed. Please try again."
       );
+    } finally {
+      setInvestingPlanId(null);
     }
   };
 
-  if (!user) {
+  const formatMoney = (amount) =>
+    Number(amount || 0).toFixed(2);
+
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-2xl font-bold">
-        Loading...
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-emerald-600" />
+
+          <p className="mt-4 font-medium text-slate-600">
+            Loading your dashboard...
+          </p>
+        </div>
       </div>
     );
   }
 
+ if (!user) {
   return (
-    <div className="min-h-screen bg-slate-100 flex">
-      <div className="flex-1 p-6">
+    <div className="rounded-2xl border border-red-200 bg-red-50 p-6 text-center">
+      <h2 className="text-lg font-semibold text-red-700">
+        Unable to load dashboard
+      </h2>
 
-        <div className="max-w-screen-2xl mx-auto px-4">
-         <DashboardHeader user={user} />
+      <p className="mt-2 text-sm text-red-600">
+        {errorMessage ||
+          "Please refresh the page or log in again."}
+      </p>
 
-<StatsCards
-  user={user}
-  investments={investments}
-/>
+      <button
+        type="button"
+        onClick={() => {
+          setLoading(true);
+          void fetchDashboardData();
+        }}
+        className="mt-5 rounded-xl bg-red-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-700"
+      >
+        Try Again
+      </button>
+    </div>
+  );
+}
 
-<QuickActions />
+  return (
+    <div className="mx-auto w-full max-w-screen-2xl space-y-6">
+      <DashboardHeader user={user} />
 
-          {/* Investment Plans */}
-          <div className="bg-white rounded-3xl shadow-sm p-6">
-           <div className="bg-white rounded-3xl shadow-sm p-6 mt-8">
+      <StatsCards
+        user={user}
+        investments={investments}
+      />
 
-  
-            <h2 className="text-2xl font-bold text-slate-900 mb-6">
-              Investment Opportunities
-            </h2>
+      <QuickActions />
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Investment plans */}
+      <section className="rounded-2xl bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+            Investment Opportunities
+          </h2>
 
-              {plans.map((plan) => (
-                <div
+          <p className="mt-1 text-sm text-slate-500">
+            Select a plan that matches your investment goals.
+          </p>
+        </div>
+
+        {plans.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+            <p className="font-medium text-slate-700">
+              No investment plans available
+            </p>
+
+            <p className="mt-1 text-sm text-slate-500">
+              New plans will appear here when they become available.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {plans.map((plan) => {
+              const isInvesting =
+                investingPlanId === plan.id;
+
+              return (
+                <article
                   key={plan.id}
-                  className="border border-slate-200 rounded-3xl p-6 hover:shadow-2xl hover:-translate-y-2 transition duration-300 bg-white relative"
+                  className="relative flex flex-col rounded-2xl border border-slate-200 bg-white p-5 transition duration-300 hover:-translate-y-1 hover:shadow-xl sm:rounded-3xl sm:p-6"
                 >
-
                   {plan.badge && (
-                    <div className="absolute top-4 right-4 bg-green-500 text-white text-xs px-3 py-1 rounded-full font-bold">
+                    <span className="mb-4 w-fit rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-emerald-700">
                       {plan.badge}
-                    </div>
-                    
+                    </span>
                   )}
 
-                  <h3 className="text-2xl font-bold mb-4">
+                  <h3 className="text-xl font-bold text-slate-900 sm:text-2xl">
                     {plan.name}
                   </h3>
 
-                  <div className="space-y-3 mb-6">
-
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">
+                  <div className="mt-5 flex-1 space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-slate-500">
                         Investment
                       </span>
 
-                      <span className="font-semibold">
-                        ${plan.investment_amount}
+                      <span className="font-semibold text-slate-900">
+                        ${formatMoney(plan.investment_amount)}
                       </span>
                     </div>
 
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">
-                        Daily Return
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-slate-500">
+                        Daily return
                       </span>
 
-                      <span className="font-semibold text-green-600">
-                        ${plan.daily_return}
+                      <span className="font-semibold text-emerald-600">
+                        ${formatMoney(plan.daily_return)}
                       </span>
                     </div>
 
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">
+                    <div className="flex items-center justify-between gap-4">
+                      <span className="text-sm text-slate-500">
                         Duration
                       </span>
 
-                      <span className="font-semibold">
-                        {plan.duration_days} Days
+                      <span className="font-semibold text-slate-900">
+                        {plan.duration_days} days
                       </span>
                     </div>
 
-                    <div className="flex justify-between border-t pt-3">
-                      <span className="font-semibold">
-                        Total Return
+                    <div className="flex items-center justify-between gap-4 border-t border-slate-100 pt-4">
+                      <span className="font-semibold text-slate-700">
+                        Total return
                       </span>
 
-                      <span className="font-bold text-xl text-green-600">
-                        ${plan.total_return}
+                      <span className="text-lg font-bold text-emerald-600 sm:text-xl">
+                        ${formatMoney(plan.total_return)}
                       </span>
                     </div>
-
                   </div>
 
                   <button
-                    onClick={() => invest(plan)}
-                    className="w-full bg-slate-900 text-white py-3 rounded-xl hover:bg-slate-800 transition font-semibold"
+                    type="button"
+                    onClick={() => void invest(plan)}
+                    disabled={isInvesting}
+                    className="mt-6 w-full rounded-xl bg-slate-900 px-4 py-3 font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
                   >
-                    Invest Now
+                    {isInvesting
+                      ? "Processing..."
+                      : "Invest Now"}
                   </button>
-
-                </div>
-              ))}
-
-            </div>
-
+                </article>
+              );
+            })}
           </div>
+        )}
+      </section>
 
+      {/* Active investments */}
+      <section className="rounded-2xl bg-white p-4 shadow-sm sm:rounded-3xl sm:p-6">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+            My Active Investments
+          </h2>
+
+          <p className="mt-1 text-sm text-slate-500">
+            Track your purchased plans and expected returns.
+          </p>
         </div>
 
-      </div>
-      <h2 className="text-2xl font-bold mb-6">
-    My Active Investments
-  </h2>
-   
+        {investments.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+            <p className="font-medium text-slate-700">
+              You have no active investments
+            </p>
 
-  {investments.length === 0 ? (
+            <p className="mt-1 text-sm text-slate-500">
+              Purchase an investment plan to see it here.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {investments.map((investment) => (
+              <article
+                key={investment.id}
+                className="rounded-2xl border border-slate-200 p-5 transition hover:shadow-lg"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <h3 className="text-lg font-bold text-slate-900 sm:text-xl">
+                    {investment.plan_name}
+                  </h3>
 
-    <p className="text-slate-500">
-      You have not purchased any investment plans yet.
-    </p>
+                  <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold capitalize text-emerald-700">
+                    {investment.status || "active"}
+                  </span>
+                </div>
 
-  ) : (
+                <div className="mt-5 space-y-3">
+                  <div className="flex justify-between gap-4">
+                    <span className="text-sm text-slate-500">
+                      Invested
+                    </span>
 
-    <div className="grid md:grid-cols-2 gap-6">
+                    <span className="font-semibold">
+                      ${formatMoney(investment.amount)}
+                    </span>
+                  </div>
 
-      {investments.map((investment) => (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-sm text-slate-500">
+                      Daily profit
+                    </span>
 
-        <div
-          key={investment.id}
-          className="border rounded-2xl p-5"
-        >
+                    <span className="font-semibold text-emerald-600">
+                      ${formatMoney(investment.daily_return)}
+                    </span>
+                  </div>
 
-          <h3 className="text-xl font-bold">
-            {investment.plan_name}
-          </h3>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-sm text-slate-500">
+                      Duration
+                    </span>
 
-          <p className="mt-3">
-            <strong>Invested:</strong> $
-            {investment.amount}
-          </p>
+                    <span className="font-semibold">
+                      {investment.duration_days} days
+                    </span>
+                  </div>
 
-          <p>
-            <strong>Daily Profit:</strong> $
-            {investment.daily_return}
-          </p>
+                  <div className="flex justify-between gap-4 border-t border-slate-100 pt-3">
+                    <span className="font-semibold text-slate-700">
+                      Total return
+                    </span>
 
-          <p>
-            <strong>Duration:</strong>
-            {" "}
-            {investment.duration_days} Days
-          </p>
-
-          <p>
-            <strong>Total Return:</strong>
-            {" "}
-            ${investment.total_return}
-          </p>
-
-          <p className="mt-3">
-            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-semibold">
-              {investment.status}
-            </span>
-          </p>
-
-        </div>
-
-      ))}
-
+                    <span className="font-bold text-emerald-600">
+                      ${formatMoney(investment.total_return)}
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
-
-  )}
-
-</div>
-</div>
   );
 }
 

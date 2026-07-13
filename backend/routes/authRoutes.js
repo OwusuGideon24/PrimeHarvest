@@ -1,3 +1,7 @@
+const crypto = require("crypto");
+const {
+  sendPasswordResetEmail,
+} = require("../services/emailService");
 const express = require("express");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
@@ -189,6 +193,267 @@ router.get("/me", authMiddleware, async (req, res) => {
     res.status(500).json({
       message: "Server error",
     });
+  }
+});
+
+/*
+==================================
+FORGOT PASSWORD
+==================================
+*/
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const email = String(req.body.email || "")
+      .trim()
+      .toLowerCase();
+
+    if (!email) {
+      return res.status(400).json({
+        message: "Please provide your email address",
+      });
+    }
+
+    const genericResponse = {
+      message:
+        "If an account exists for that email, a password reset link has been sent.",
+    };
+
+    const userResult = await pool.query(
+      `SELECT id, full_name, email
+       FROM users
+       WHERE LOWER(email) = $1
+       LIMIT 1`,
+      [email]
+    );
+
+    /*
+    Always return the same response so attackers cannot discover
+    which email addresses are registered.
+    */
+    if (userResult.rows.length === 0) {
+      return res.json(genericResponse);
+    }
+
+    const user = userResult.rows[0];
+
+const rawToken = crypto.randomBytes(32).toString("hex");
+
+const tokenHash = crypto
+  .createHash("sha256")
+  .update(rawToken)
+  .digest("hex");
+
+/*
+Invalidate previous unused reset tokens.
+*/
+await pool.query(
+  `UPDATE password_reset_tokens
+   SET used_at = CURRENT_TIMESTAMP
+   WHERE user_id = $1
+     AND used_at IS NULL`,
+  [user.id]
+);
+
+/*
+Store the new token.
+*/
+await pool.query(
+  `INSERT INTO password_reset_tokens
+   (user_id, token_hash, expires_at)
+   VALUES (
+     $1,
+     $2,
+     CURRENT_TIMESTAMP + INTERVAL '30 minutes'
+   )`,
+  [user.id, tokenHash]
+);
+
+const frontendUrl =
+  process.env.FRONTEND_URL || "http://localhost:5173";
+
+const resetUrl =
+  `${frontendUrl}/reset-password?token=${rawToken}`;
+    try {
+      await sendPasswordResetEmail({
+        recipientEmail: user.email,
+        recipientName: user.full_name,
+        resetUrl,
+      });
+    } catch (emailError) {
+      console.error(
+        "Password reset email failed:",
+        emailError.message
+      );
+
+      /*
+      Invalidate the token if the email could not be delivered.
+      */
+      await pool.query(
+        `UPDATE password_reset_tokens
+         SET used_at = CURRENT_TIMESTAMP
+         WHERE token_hash = $1`,
+        [tokenHash]
+      );
+
+      return res.status(500).json({
+        message:
+          "The password reset email could not be sent. Please try again later.",
+      });
+    }
+
+    return res.json(genericResponse);
+  } catch (error) {
+    console.error("Forgot password error:", error);
+
+    return res.status(500).json({
+      message:
+        "The password reset request could not be processed.",
+    });
+  }
+});
+
+/*
+==================================
+VERIFY RESET TOKEN
+==================================
+*/
+router.get("/reset-password/:token", async (req, res) => {
+  try {
+    const rawToken = String(req.params.token || "");
+
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+
+    const tokenResult = await pool.query(
+      `SELECT id
+       FROM password_reset_tokens
+       WHERE token_hash = $1
+         AND used_at IS NULL
+         AND expires_at > CURRENT_TIMESTAMP
+       LIMIT 1`,
+      [tokenHash]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      return res.status(400).json({
+        valid: false,
+        message:
+          "This password reset link is invalid or has expired.",
+      });
+    }
+
+    return res.json({
+      valid: true,
+      message: "Password reset link is valid.",
+    });
+  } catch (error) {
+    console.error("Reset token verification error:", error);
+
+    return res.status(500).json({
+      valid: false,
+      message: "Unable to verify the password reset link.",
+    });
+  }
+});
+
+/*
+==================================
+RESET PASSWORD
+==================================
+*/
+router.post("/reset-password", async (req, res) => {
+  const client = await pool.connect();
+
+  try {
+    const rawToken = String(req.body.token || "");
+    const newPassword = String(req.body.password || "");
+
+    if (!rawToken || !newPassword) {
+      return res.status(400).json({
+        message: "Reset token and new password are required.",
+      });
+    }
+
+    const hasUppercase = /[A-Z]/.test(newPassword);
+    const hasLowercase = /[a-z]/.test(newPassword);
+    const hasNumber = /\d/.test(newPassword);
+
+    if (
+      newPassword.length < 8 ||
+      !hasUppercase ||
+      !hasLowercase ||
+      !hasNumber
+    ) {
+      return res.status(400).json({
+        message:
+          "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, and one number.",
+      });
+    }
+
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(rawToken)
+      .digest("hex");
+
+    await client.query("BEGIN");
+
+    const tokenResult = await client.query(
+      `SELECT
+         password_reset_tokens.id,
+         password_reset_tokens.user_id
+       FROM password_reset_tokens
+       WHERE password_reset_tokens.token_hash = $1
+         AND password_reset_tokens.used_at IS NULL
+         AND password_reset_tokens.expires_at > CURRENT_TIMESTAMP
+       FOR UPDATE`,
+      [tokenHash]
+    );
+
+    if (tokenResult.rows.length === 0) {
+      await client.query("ROLLBACK");
+
+      return res.status(400).json({
+        message:
+          "This password reset link is invalid or has expired.",
+      });
+    }
+
+    const resetRecord = tokenResult.rows[0];
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await client.query(
+      `UPDATE users
+       SET password = $1
+       WHERE id = $2`,
+      [hashedPassword, resetRecord.user_id]
+    );
+
+    await client.query(
+      `UPDATE password_reset_tokens
+       SET used_at = CURRENT_TIMESTAMP
+       WHERE user_id = $1
+         AND used_at IS NULL`,
+      [resetRecord.user_id]
+    );
+
+    await client.query("COMMIT");
+
+    return res.json({
+      message:
+        "Your password has been reset successfully. You can now log in.",
+    });
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    console.error("Reset password error:", error);
+
+    return res.status(500).json({
+      message: "Your password could not be reset.",
+    });
+  } finally {
+    client.release();
   }
 });
 

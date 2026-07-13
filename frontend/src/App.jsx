@@ -1,19 +1,28 @@
-import { Routes, Route } from "react-router-dom";
+import {
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
 
+import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Home from "./pages/Home";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
 
 import DashboardLayout from "./layouts/DashboardLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 import Dashboard from "./pages/Dashboard";
 import Wallet from "./pages/Wallet";
 import Transactions from "./pages/Transactions";
 import Settings from "./pages/Settings";
 import Referrals from "./pages/Referrals";
-import Deposit from "./pages/Deposit";  
+import Deposit from "./pages/Deposit";
+import Withdraw from "./pages/Withdraw";
 
-import ProtectedRoute from "./components/ProtectedRoute";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminWithdrawals from "./pages/AdminWithdrawals";
 import AdminUsers from "./pages/AdminUsers";
@@ -22,39 +31,79 @@ import AdminTransactions from "./pages/AdminTransactions";
 import AdminSettings from "./pages/AdminSettings";
 import AdminPlans from "./pages/AdminPlans";
 import AdminDeposits from "./pages/AdminDeposits";
-import Withdraw from "./pages/Withdraw";
 
 function App() {
   return (
     <Routes>
-
-      {/* Public Routes */}
+      {/* Public routes */}
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/admin" element={<AdminDashboard />} />
-      <Route path="/admin/withdrawals" element={<AdminWithdrawals />} />
-      <Route path="/admin/users" element={<AdminUsers />} />
-      <Route path="/admin/deposits" element={<AdminDeposits />} />
-      <Route path="/withdraw" element={<Withdraw />} />
       <Route
-  path="/admin/settings"
-  element={<AdminSettings />}
-/>
-      <Route
-  path="/admin/transactions"
-  element={<AdminTransactions />}
-/>
-      <Route
-  path="/admin/plans"
-  element={<AdminPlans />}
-/>
-      <Route
-  path="/admin/users/:id"
-  element={<AdminUserDetails />}
+  path="/forgot-password"
+  element={<ForgotPassword />}
 />
 
-      {/* Protected Dashboard Routes */}
+<Route
+  path="/reset-password"
+  element={<ResetPassword />}
+/>
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
+      
+
+      {/* Admin routes */}
+      <Route
+        path="/admin"
+        element={
+          <Navigate
+            to="/admin/dashboard"
+            replace
+          />
+        }
+      />
+
+      <Route
+        path="/admin/dashboard"
+        element={<AdminDashboard />}
+      />
+
+      <Route
+        path="/admin/withdrawals"
+        element={<AdminWithdrawals />}
+      />
+
+      <Route
+        path="/admin/users"
+        element={<AdminUsers />}
+      />
+
+      <Route
+        path="/admin/users/:id"
+        element={<AdminUserDetails />}
+      />
+
+      <Route
+        path="/admin/deposits"
+        element={<AdminDeposits />}
+      />
+
+      <Route
+        path="/admin/transactions"
+        element={<AdminTransactions />}
+      />
+
+      <Route
+        path="/admin/plans"
+        element={<AdminPlans />}
+      />
+
+      <Route
+        path="/admin/settings"
+        element={<AdminSettings />}
+      />
+
+      {/* Protected user dashboard routes */}
       <Route
         element={
           <ProtectedRoute>
@@ -62,14 +111,47 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/wallet" element={<Wallet />} />
-        <Route path="/transactions" element={<Transactions />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/referrals" element={<Referrals />} />
-        <Route path="/deposit" element={<Deposit />} />
+        <Route
+          path="/dashboard"
+          element={<Dashboard />}
+        />
+
+        <Route
+          path="/wallet"
+          element={<Wallet />}
+        />
+
+        <Route
+          path="/transactions"
+          element={<Transactions />}
+        />
+
+        <Route
+          path="/settings"
+          element={<Settings />}
+        />
+
+        <Route
+          path="/referrals"
+          element={<Referrals />}
+        />
+
+        <Route
+          path="/deposit"
+          element={<Deposit />}
+        />
+
+        <Route
+          path="/withdraw"
+          element={<Withdraw />}
+        />
       </Route>
 
+      {/* Unknown route */}
+      <Route
+        path="*"
+        element={<Navigate to="/" replace />}
+      />
     </Routes>
   );
 }
