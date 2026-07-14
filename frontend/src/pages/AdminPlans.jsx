@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 import AdminSidebar from "../components/admin/AdminSidebar";
 import AdminHeader from "../components/admin/AdminHeader";
@@ -34,8 +34,8 @@ function AdminPlans() {
 
         setErrorMessage("");
 
-        const response = await axios.get(
-          "http://localhost:5000/api/admin/plans",
+        const response = await api.get(
+          "/admin/plans",
           {
             headers: {
               Authorization: `Bearer ${token}`,

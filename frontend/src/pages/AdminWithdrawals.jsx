@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 import WithdrawalTable from "../components/admin/WithdrawalTable";
 
@@ -29,8 +29,8 @@ function AdminWithdrawals() {
 
         setErrorMessage("");
 
-        const response = await axios.get(
-          "http://localhost:5000/api/admin/withdrawals",
+        const response = await api.get(
+          "/admin/withdrawals",
           {
             headers: {
               Authorization: `Bearer ${token}`,

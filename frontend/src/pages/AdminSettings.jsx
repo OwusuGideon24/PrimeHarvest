@@ -4,7 +4,7 @@ import {
   useMemo,
   useState,
 } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 const DEFAULT_SETTINGS = {
   company_name: "",
@@ -68,8 +68,8 @@ function AdminSettings() {
           text: "",
         });
 
-        const response = await axios.get(
-          "http://localhost:5000/api/admin/settings",
+        const response = await api.get(
+          "/admin/settings",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -229,8 +229,8 @@ function AdminSettings() {
         text: "",
       });
 
-      const response = await axios.put(
-        "http://localhost:5000/api/admin/settings",
+      const response = await api.put(
+        "/admin/settings",
         requestData,
         {
           headers: {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 
 function Withdraw() {
   const [user, setUser] = useState(null);
@@ -28,14 +28,14 @@ function Withdraw() {
 
     try {
       const [userResponse, withdrawalsResponse] = await Promise.all([
-        axios.get("http://localhost:5000/api/auth/me", {
+        api.get("/auth/me", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         }),
 
-        axios.get(
-          "http://localhost:5000/api/withdrawals/my-withdrawals",
+        api.get(
+          "/withdrawals/my-withdrawals",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -183,8 +183,8 @@ function Withdraw() {
         text: "",
       });
 
-      const response = await axios.post(
-        "http://localhost:5000/api/withdrawals",
+      const response = await api.post(
+        "/withdrawals",
         {
           amount: numericAmount,
           method,

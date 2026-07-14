@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 
 import UserProfileCard from "../components/admin/UserProfileCard";
 import UserInvestments from "../components/admin/UserInvestments";
@@ -33,8 +33,8 @@ function AdminUserDetails() {
 
         setErrorMessage("");
 
-        const response = await axios.get(
-          `http://localhost:5000/api/admin/users/${id}`,
+        const response = await api.get(
+          `/admin/users/${id}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

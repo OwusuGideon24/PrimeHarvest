@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 function AdminTransactions() {
   const [transactions, setTransactions] = useState([]);
@@ -28,8 +28,8 @@ function AdminTransactions() {
 
         setErrorMessage("");
 
-        const response = await axios.get(
-          "http://localhost:5000/api/admin/transactions",
+        const response = await api.get(
+          "/admin/transactions",
           {
             headers: {
               Authorization: `Bearer ${token}`,

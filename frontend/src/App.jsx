@@ -14,6 +14,7 @@ import Privacy from "./pages/Privacy";
 
 import DashboardLayout from "./layouts/DashboardLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 
 import Dashboard from "./pages/Dashboard";
 import Wallet from "./pages/Wallet";
@@ -39,71 +40,106 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route
-  path="/forgot-password"
-  element={<ForgotPassword />}
-/>
 
-<Route
-  path="/reset-password"
-  element={<ResetPassword />}
-/>
+      <Route
+        path="/forgot-password"
+        element={<ForgotPassword />}
+      />
+
+      <Route
+        path="/reset-password"
+        element={<ResetPassword />}
+      />
+
       <Route path="/terms" element={<Terms />} />
       <Route path="/privacy" element={<Privacy />} />
-      
 
-      {/* Admin routes */}
+      {/* Protected admin routes */}
       <Route
         path="/admin"
         element={
-          <Navigate
-            to="/admin/dashboard"
-            replace
-          />
+          <AdminRoute>
+            <Navigate
+              to="/admin/dashboard"
+              replace
+            />
+          </AdminRoute>
         }
       />
 
       <Route
         path="/admin/dashboard"
-        element={<AdminDashboard />}
+        element={
+          <AdminRoute>
+            <AdminDashboard />
+          </AdminRoute>
+        }
       />
 
       <Route
         path="/admin/withdrawals"
-        element={<AdminWithdrawals />}
+        element={
+          <AdminRoute>
+            <AdminWithdrawals />
+          </AdminRoute>
+        }
       />
 
       <Route
         path="/admin/users"
-        element={<AdminUsers />}
+        element={
+          <AdminRoute>
+            <AdminUsers />
+          </AdminRoute>
+        }
       />
 
       <Route
         path="/admin/users/:id"
-        element={<AdminUserDetails />}
+        element={
+          <AdminRoute>
+            <AdminUserDetails />
+          </AdminRoute>
+        }
       />
 
       <Route
         path="/admin/deposits"
-        element={<AdminDeposits />}
+        element={
+          <AdminRoute>
+            <AdminDeposits />
+          </AdminRoute>
+        }
       />
 
       <Route
         path="/admin/transactions"
-        element={<AdminTransactions />}
+        element={
+          <AdminRoute>
+            <AdminTransactions />
+          </AdminRoute>
+        }
       />
 
       <Route
         path="/admin/plans"
-        element={<AdminPlans />}
+        element={
+          <AdminRoute>
+            <AdminPlans />
+          </AdminRoute>
+        }
       />
 
       <Route
         path="/admin/settings"
-        element={<AdminSettings />}
+        element={
+          <AdminRoute>
+            <AdminSettings />
+          </AdminRoute>
+        }
       />
 
-      {/* Protected user dashboard routes */}
+      {/* Protected user routes */}
       <Route
         element={
           <ProtectedRoute>

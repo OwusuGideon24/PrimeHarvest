@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 function Transactions() {
   const [transactions, setTransactions] = useState([]);
@@ -18,8 +18,8 @@ function Transactions() {
 
     const fetchTransactions = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/wallet/transactions",
+        const response = await api.get(
+          "/wallet/transactions",
           {
             headers: {
               Authorization: `Bearer ${token}`,

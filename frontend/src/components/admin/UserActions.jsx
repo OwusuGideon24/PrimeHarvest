@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 
 function UserActions({ user, refresh }) {
   const [amount, setAmount] = useState("");
@@ -75,8 +75,8 @@ function UserActions({ user, refresh }) {
         text: "",
       });
 
-      const response = await axios.put(
-        `http://localhost:5000/api/admin/users/${user.id}/balance`,
+      const response = await api.put(
+        `/admin/users/${user.id}/balance`,
         {
           amount: numericAmount,
           action,
@@ -144,8 +144,8 @@ function UserActions({ user, refresh }) {
         text: "",
       });
 
-      const response = await axios.put(
-        `http://localhost:5000/api/admin/users/${user.id}/status`,
+      const response = await api.put(
+        `/admin/users/${user.id}/status`,
         {
           status: newStatus,
         },
@@ -216,8 +216,8 @@ function UserActions({ user, refresh }) {
         text: "",
       });
 
-      const response = await axios.put(
-        `http://localhost:5000/api/admin/users/${user.id}/role`,
+      const response = await api.put(
+        `/admin/users/${user.id}/role`,
         {
           role,
         },

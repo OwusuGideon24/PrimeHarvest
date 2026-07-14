@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 function AdminDeposits() {
   const [deposits, setDeposits] = useState([]);
@@ -35,8 +35,8 @@ function AdminDeposits() {
           setRefreshing(true);
         }
 
-        const response = await axios.get(
-          "http://localhost:5000/api/admin/deposits",
+        const response = await api.get(
+          "/admin/deposits",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -112,8 +112,8 @@ function AdminDeposits() {
         text: "",
       });
 
-      const response = await axios.put(
-        `http://localhost:5000/api/admin/deposits/${deposit.id}`,
+      const response = await api.put(
+        `/admin/deposits/${deposit.id}`,
         {
           status,
         },

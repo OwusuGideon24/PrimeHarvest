@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 
 function Settings() {
   const outletContext = useOutletContext();
@@ -32,8 +32,8 @@ function Settings() {
 
     const fetchSettings = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/user/settings",
+        const response = await api.get(
+          "/user/settings",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -158,8 +158,8 @@ function Settings() {
         requestData.password = form.password;
       }
 
-      const response = await axios.put(
-        "http://localhost:5000/api/user/settings",
+      const response = await api.put(
+        "/user/settings",
         requestData,
         {
           headers: {

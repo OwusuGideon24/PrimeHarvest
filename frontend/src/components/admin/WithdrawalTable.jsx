@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 
 function WithdrawalTable({ withdrawals = [], refresh }) {
   const [processingId, setProcessingId] = useState(null);
@@ -73,8 +73,8 @@ function WithdrawalTable({ withdrawals = [], refresh }) {
         text: "",
       });
 
-      const response = await axios.put(
-        `http://localhost:5000/api/admin/withdrawals/${withdrawal.id}`,
+      const response = await api.put(
+        `/admin/withdrawals/${withdrawal.id}`,
         {
           status,
         },

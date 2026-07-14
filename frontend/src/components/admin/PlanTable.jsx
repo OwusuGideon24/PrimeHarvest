@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 
 function PlanTable({ plans = [], refresh, editPlan }) {
   const [deletingId, setDeletingId] = useState(null);
@@ -56,8 +56,8 @@ function PlanTable({ plans = [], refresh, editPlan }) {
         text: "",
       });
 
-      const response = await axios.delete(
-        `http://localhost:5000/api/admin/plans/${plan.id}`,
+      const response = await api.delete(
+        `/admin/plans/${plan.id}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

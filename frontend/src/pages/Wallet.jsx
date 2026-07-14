@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 
 function Wallet() {
   const [user, setUser] = useState(null);
@@ -10,7 +10,7 @@ function Wallet() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  const loadWallet = async () => {
+  const loadWallet = useCallback(async () => {
     if (!token) {
       setErrorMessage("Your login session has expired.");
       setLoading(false);
@@ -20,21 +20,19 @@ function Wallet() {
     try {
       setErrorMessage("");
 
-      const response = await axios.get(
-        "http://localhost:5000/api/auth/me",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await api.get("/auth/me", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       setUser(response.data.user || response.data);
     } catch (error) {
-      console.error(
-        "Unable to load wallet:",
-        error.response?.data?.message || error.message
-      );
+      console.error("Unable to load wallet:", {
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data,
+      });
 
       if (error.response?.status === 401) {
         localStorage.removeItem("token");
@@ -46,12 +44,13 @@ function Wallet() {
 
       setErrorMessage(
         error.response?.data?.message ||
+          error.message ||
           "Unable to load your wallet. Please try again."
       );
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate, token]);
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -61,7 +60,7 @@ function Wallet() {
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, []);
+  }, [loadWallet]);
 
   const formatMoney = (amount) =>
     Number(amount || 0).toLocaleString("en-US", {

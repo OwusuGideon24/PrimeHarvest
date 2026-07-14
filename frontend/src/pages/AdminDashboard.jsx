@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 import AdminSidebar from "../components/admin/AdminSidebar";
 import AdminHeader from "../components/admin/AdminHeader";
@@ -33,8 +33,8 @@ function AdminDashboard() {
         usersResponse,
         withdrawalsResponse,
       ] = await Promise.all([
-        axios.get(
-          "http://localhost:5000/api/admin/dashboard",
+        api.get(
+          "/admin/dashboard",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -42,8 +42,8 @@ function AdminDashboard() {
           }
         ),
 
-        axios.get(
-          "http://localhost:5000/api/admin/recent-users",
+        api.get(
+          "/admin/recent-users",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -51,8 +51,8 @@ function AdminDashboard() {
           }
         ),
 
-        axios.get(
-          "http://localhost:5000/api/admin/recent-withdrawals",
+        api.get(
+          "/admin/recent-withdrawals",
           {
             headers: {
               Authorization: `Bearer ${token}`,

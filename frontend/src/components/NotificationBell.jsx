@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 function NotificationBell() {
   const [notifications, setNotifications] = useState([]);
@@ -17,8 +17,8 @@ function NotificationBell() {
     if (!token) return;
 
     try {
-      await axios.put(
-        `http://localhost:5000/api/notifications/${notificationId}/read`,
+      await api.put(
+        `/notifications/${notificationId}/read`,
         {},
         {
           headers: {
@@ -46,8 +46,8 @@ function NotificationBell() {
     if (!token) return;
 
     try {
-      await axios.put(
-        "http://localhost:5000/api/notifications/read-all",
+      await api.put(
+        "/notifications/read-all",
         {},
         {
           headers: {
@@ -85,8 +85,8 @@ function NotificationBell() {
 
     const fetchNotifications = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/notifications",
+        const response = await api.get(
+          "/notifications",
           {
             headers: {
               Authorization: `Bearer ${token}`,

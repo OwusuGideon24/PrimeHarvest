@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 
 function Deposit() {
   const [settings, setSettings] = useState(null);
@@ -27,8 +27,8 @@ function Deposit() {
 
     const fetchDepositSettings = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/deposits/settings",
+        const response = await api.get(
+          "/deposits/settings",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -196,8 +196,8 @@ function Deposit() {
         text: "",
       });
 
-      const response = await axios.post(
-        "http://localhost:5000/api/deposits",
+      const response = await api.post(
+        "/deposits",
         {
           amount: numericAmount,
           network,

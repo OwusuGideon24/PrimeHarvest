@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import axios from "axios";
+import api from "../../services/api";
 
 function PlanModal({ plan, close, refresh }) {
   const [form, setForm] = useState({
@@ -131,8 +131,8 @@ function PlanModal({ plan, close, refresh }) {
       let response;
 
       if (isEditing) {
-        response = await axios.put(
-          `http://localhost:5000/api/admin/plans/${plan.id}`,
+        response = await api.put(
+          `/admin/plans/${plan.id}`,
           requestData,
           {
             headers: {
@@ -141,8 +141,8 @@ function PlanModal({ plan, close, refresh }) {
           }
         );
       } else {
-        response = await axios.post(
-          "http://localhost:5000/api/admin/plans",
+        response = await api.post(
+          "/admin/plans",
           requestData,
           {
             headers: {

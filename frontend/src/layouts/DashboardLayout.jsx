@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 
 import Sidebar from "../components/Sidebar";
 import NotificationBell from "../components/NotificationBell";
@@ -25,8 +25,8 @@ function DashboardLayout() {
 
     const loadUser = async () => {
       try {
-        const response = await axios.get(
-          "http://localhost:5000/api/auth/me",
+        const response = await api.get(
+          "/auth/me",
           {
             headers: {
               Authorization: `Bearer ${token}`,

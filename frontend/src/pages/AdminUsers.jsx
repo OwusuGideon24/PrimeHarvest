@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import api from "../services/api";
 
 import UserTable from "../components/admin/UserTable";
 
@@ -30,8 +30,8 @@ function AdminUsers() {
 
         setErrorMessage("");
 
-        const response = await axios.get(
-          "http://localhost:5000/api/admin/users",
+        const response = await api.get(
+          "/admin/users",
           {
             headers: {
               Authorization: `Bearer ${token}`,
